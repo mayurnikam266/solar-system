@@ -3,30 +3,33 @@ const express = require('express');
 const OS = require('os');
 const bodyParser = require('body-parser');
 const mongoose = require("mongoose");
+const cors = require('cors');
 const app = express();
-const cors = require('cors')
-
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '/')));
-app.use(cors())
+app.use(cors());
 
-mongoose.connect(process.env.MONGO_URI, {
-    user: process.env.MONGO_USERNAME,
-    pass: process.env.MONGO_PASSWORD,
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}, function(err) {
-    if (err) {
-        console.log("error!! " + err)
-    } else {
-      //  console.log("MongoDB Connection Successful")
+// MongoDB connection using async/await
+const DB_URI = 'mongodb+srv://superuser:SuperPassword@supercluster.d83jj.mongodb.net/superData';
+
+async function connectDB() {
+    try {
+        await mongoose.connect(DB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+        console.log("✅ MongoDB Connected");
+    } catch (err) {
+        console.error("❌ MongoDB Connection Error:", err.message);
     }
-})
+}
 
-var Schema = mongoose.Schema;
+connectDB(); // Connect to DB
 
-var dataSchema = new Schema({
+// Define schema and model only if connected
+let planetModel;
+const dataSchema = new mongoose.Schema({
     name: String,
     id: Number,
     description: String,
@@ -34,54 +37,45 @@ var dataSchema = new Schema({
     velocity: String,
     distance: String
 });
-var planetModel = mongoose.model('planets', dataSchema);
+planetModel = mongoose.model('planets', dataSchema);
 
-
-
-app.post('/planet',   function(req, res) {
-   // console.log("Received Planet ID " + req.body.id)
-    planetModel.findOne({
-        id: req.body.id
-    }, function(err, planetData) {
-        if (err) {
-            alert("Ooops, We only have 9 planets and a sun. Select a number from 0 - 9")
-            res.send("Error in Planet Data")
-        } else {
-            res.send(planetData);
+// Planet POST API
+app.post('/planet', async function (req, res) {
+    try {
+        const planetData = await planetModel.findOne({ id: req.body.id });
+        if (!planetData) {
+            return res.status(404).send("Planet not found.");
         }
-    })
-})
+        res.send(planetData);
+    } catch (err) {
+        console.error("❌ Error fetching planet:", err.message);
+        res.status(500).send("Server error");
+    }
+});
 
-app.get('/',   async (req, res) => {
+// Serve index.html
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/', 'index.html'));
 });
 
-
-app.get('/os',   function(req, res) {
-    res.setHeader('Content-Type', 'application/json');
-    res.send({
-        "os": OS.hostname(),
-        "env": process.env.NODE_ENV
+// Health checks
+app.get('/os', (req, res) => {
+    res.json({
+        os: OS.hostname(),
+        env: process.env.NODE_ENV
     });
-})
+});
 
-app.get('/live',   function(req, res) {
-    res.setHeader('Content-Type', 'application/json');
-    res.send({
-        "status": "live"
-    });
-})
+app.get('/live', (req, res) => {
+    res.json({ status: "live" });
+});
 
-app.get('/ready',   function(req, res) {
-    res.setHeader('Content-Type', 'application/json');
-    res.send({
-        "status": "ready"
-    });
-})
+app.get('/ready', (req, res) => {
+    res.json({ status: "ready" });
+});
 
 app.listen(3000, () => {
-    console.log("Server successfully running on port - " +3000);
-})
-
+    console.log("🚀 Server running on http://localhost:3000");
+});
 
 module.exports = app;
