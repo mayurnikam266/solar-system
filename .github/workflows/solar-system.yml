@@ -7,6 +7,9 @@ on:
         - main
         - 'feature/*'
 
+env:
+  MONGO_URI: ${{ vars.MONGO_URI }}
+  
 jobs:
   unit-testing:
     name: unit testing
@@ -20,6 +23,11 @@ jobs:
         node-version: 18
     - name: install dependencies
       run: npm install
-
+    
     - name: unit testing
       run: npm test
+    - name: archieve test results
+      run: actions/upload-artifact@v4
+      with:
+        name: Mocha-test-result
+        path: test-results.xml 
