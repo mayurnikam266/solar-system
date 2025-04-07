@@ -11,8 +11,7 @@ app.use(express.static(path.join(__dirname, '/')));
 app.use(cors());
 
 // MongoDB connection using async/await
-const DB_URI = 'mongodb+srv://superuser:SuperPassword@supercluster.d83jj.mongodb.net/superData';
-
+const DB_URI = process.env.MONGO_URI;
 async function connectDB() {
     try {
         await mongoose.connect(DB_URI, {

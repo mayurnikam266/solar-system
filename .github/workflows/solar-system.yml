@@ -7,6 +7,9 @@ on:
         - main
         - 'feature/*'
 
+env:
+  MONGO-URI: ${{ vars.MONGO_URI }}
+  
 jobs:
   unit-testing:
     name: unit testing
