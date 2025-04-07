@@ -1,33 +1,25 @@
-name: Solar System Workflow
-
+name: Solar system workflow
+ 
 on: 
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - 'feature/*'
-    
-jobs:
-    unit-testing:
-        name: Unit Testing
-        runs-on: ubuntu-latest
-        steps:
-        - name: Checkout Repository
-          uses: actions/checkout@v4
+  push: 
+      branches:
+        - main
+        - 'feature/*'
 
-        - name: Setup NodeJS Version
-          uses: actions/setup-node@v3
-          with:
-            node-version: 20
-    
-        - name: Install Dependencies
-          run: npm install
-    
-        - name: Unit Testing
-          run: npm test
-          
-        - name: Archive Test Result
-          uses: actions/upload-artifact@v3
-          with:
-            name: Mocha-Test-Result
-            path: test-results.xml
+jobs:
+  unit-testing:
+    name: unit testing
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout repository
+      uses: actions/checkout@v4
+    - name: setup node version - 10
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+    - name: install dependencies
+      run: npm install
+
+    - name: unit testing
+      run: npm test
