@@ -34,5 +34,5 @@ jobs:
     - name: archieve test results
       uses: actions/upload-artifact@v4
       with:
-        name: Mocha-test-result-${{ matrix.operating_system}}-${{ matrix.operating_system}}
+        name: Mocha-test-result-${{ matrix.operating_system}}-${{ matrix.nodejs_version}}
         path: test-results.xml 
