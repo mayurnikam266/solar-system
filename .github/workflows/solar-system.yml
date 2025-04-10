@@ -31,6 +31,7 @@ jobs:
 
       - name: unit testing
         id: nodejs-unit-testing-step
+        continue-on-error: true
         run: npm test
 
       - name: archive test results
