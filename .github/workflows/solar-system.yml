@@ -18,25 +18,27 @@ jobs:
         operating_system: [ubuntu-latest,macos-latest]
     runs-on: ${{ matrix.operating_system }}
     steps:
-    - name: checkout repository
-      uses: actions/checkout@v4
-    - name: setup node version - ${{ matrix.nodejs_version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.nodejs_version }}
-    - name: install dependencies
-      run: npm install
-    
-    - name: unit testing
-      id: nodejs-unit-testing-step ## id
-      run: npm test
-## setting id also 
-    - name: archieve test results
-      if: steps.nodejs-unit-testing-step.outcomes == 'failure' || steps.nodejs-unit-testing-step.outcomes == 'success' 
-      uses: actions/upload-artifact@v4
-      with:
-        name: Mocha-test-result-${{ matrix.operating_system}}-${{ matrix.nodejs_version}} ## this name present in the comment
-        path: test-results.xml 
+      - name: checkout repository
+        uses: actions/checkout@v4
+
+      - name: setup node version - ${{ matrix.nodejs_version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.nodejs_version }}
+
+      - name: install dependencies
+        run: npm install
+
+      - name: unit testing
+        id: nodejs-unit-testing-step
+        run: npm test
+
+      - name: archive test results
+        if: steps.nodejs-unit-testing-step.outcome == 'failure' || steps.nodejs-unit-testing-step.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mocha-test-result-${{ matrix.operating_system}}-${{ matrix.nodejs_version}}
+          path: test-results.xml
       
   code-coverage:
     name: code coverage
