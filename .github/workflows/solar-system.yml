@@ -1,5 +1,4 @@
 name: Solar system workflow
- 
 on: 
   workflow_dispatch:
   push: 
@@ -36,3 +35,28 @@ jobs:
       with:
         name: Mocha-test-result-${{ matrix.operating_system}}-${{ matrix.nodejs_version}} ## this name present in the comment
         path: test-results.xml 
+      
+  code-coverage:
+    name: code coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+
+      - name: setup nodejs version - 18
+        uses: actions/setup-nodejs@v4
+        with:
+          node-version: 18
+      - name: install dependencies
+        run: npm install
+
+      - name: check code coverage
+        run: npm run coverage
+      
+      - name: archieve test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-result
+          path: coverage
+          retention-days: 5 ## storing files and delete after retention days
+         
