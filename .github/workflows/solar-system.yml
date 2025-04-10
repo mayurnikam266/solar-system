@@ -31,7 +31,7 @@ jobs:
         with:
             path: node_modules
             ## hashfile gives hash for given files when file changes the cache also changes
-            key: ${{ runner.os }}-node-modules-${{ hashfiles(' package-lock.json') }}
+            key: ${{ runner.os }}-${{ matrix.nodejs_version }}-node-modules-${{ hashfiles(' package-lock.json') }}
 
       - name: install dependencies
         run: npm install
