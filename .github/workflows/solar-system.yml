@@ -106,14 +106,22 @@ jobs:
 
       - name: Docker image testing
         run: |
-          docker images
-          docker run --name solar-system-app -d \
-            -p 3000:3000 \
-            -e MONGO_URI:$MONGO_URI \
-            ${{ vars.DOCKERUSERNAME }}/solar-system:${{ github.sha }}
-          
-          export IP= $(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}} solar-system-app')
-          echo $IP
-
-          echo Testing image url using wget
-          wget -q -O -127.0.0.1:3000/live | grep live
+            echo "📦 Listing available Docker images..."
+            docker images
+        
+            echo "🚀 Running Docker container..."
+            docker run --name solar-system-app -d -p 3000:3000 ${{ vars.DOCKERUSERNAME }}/solar-system:${{ github.sha }}
+        
+            echo "⏳ Waiting for the app to start..."
+            sleep 5
+        
+            echo "🔍 Fetching container's internal IP..."
+            IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system-app)
+            echo "🧠 Container IP: $IP"
+        
+            echo "🧪 Testing image via localhost..."
+            wget -qO- http://127.0.0.1:3000/live | grep live
+        
+            echo "🧪 Testing image via container IP (may not work on GitHub-hosted runner)..."
+            wget -qO- http://$IP:3000/live | grep live || echo "Container IP access might be restricted on GitHub-hosted runners"
+        
