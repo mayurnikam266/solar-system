@@ -96,7 +96,7 @@ jobs:
           username: ${{ vars.DOCKERUSERNAME }}
           password: ${{ secrets.DOCKERPASSWORD }}
 ## context is content location of dockerfile
-      - name: Build and push
+      - name: Docker build
         uses: docker/build-push-action@v6
         with:
           context: .
