@@ -124,4 +124,12 @@ jobs:
         
             echo "🧪 Testing image via container IP (may not work on GitHub-hosted runner)..."
             wget -qO- http://$IP:3000/live | grep live || echo "Container IP access might be restricted on GitHub-hosted runners"
-        
+      
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          ## sha value is commit value of commit id
+          tags: ${{ vars.DOCKERUSERNAME }}/solar-system:${{ github.sha }}
+    
