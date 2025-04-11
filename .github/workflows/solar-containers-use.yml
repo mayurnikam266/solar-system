@@ -1,0 +1,157 @@
+name: Solar system workflow using containers for testing and services
+on: 
+  workflow_dispatch:
+  push: 
+      branches:
+        - main
+        - 'feature/*'
+
+env:
+  MONGO_URI: ${{ vars.MONGO_URI }}
+  
+jobs:
+  unit-testing:
+    name: unit testing
+    services:
+        mongo-db:
+            image: siddharth/mongo-db:non-prod
+            ports:
+                - 27017:27017
+    env:
+        MONGO_URI: 'mongodb+srv://localhost:27017/superData'
+        MONGO_USERNAME: non-prod-user
+        MONGO_PASSWORD: non-prod-password
+
+    strategy:
+      matrix:
+        nodejs_version: [18,19,20]
+        operating_system: [ubuntu-latest,macos-latest]
+    runs-on: ${{ matrix.operating_system }}
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+
+      - name: setup node version - ${{ matrix.nodejs_version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.nodejs_version }}
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+            path: node_modules
+            ## hashfile gives hash for given files when file changes the cache also changes
+            key: ${{ runner.os }}-${{ matrix.nodejs_version }}-node-modules-${{ hashfiles(' package-lock.json') }}
+
+      - name: install dependencies
+        run: npm install
+      
+      
+      - name: unit testing
+        id: nodejs-unit-testing-step
+        continue-on-error: true
+        run: npm test
+
+      - name: archive test results
+        if: steps.nodejs-unit-testing-step.outcome == 'failure' || steps.nodejs-unit-testing-step.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mocha-test-result-${{ matrix.operating_system}}-${{ matrix.nodejs_version}}
+          path: test-results.xml
+      
+  code-coverage:
+    name: code coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+
+      - name: setup nodejs version - 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+            path: node_modules
+            ## hashfile gives hash for given files when file changes the cache also changes
+            key: ${{ runner.os }}-node-modules-${{ hashfiles(' package-lock.json') }}
+
+      - name: install dependencies
+        run: npm install
+
+      - name: check code coverage
+        continue-on-error: True
+        run: npm run coverage
+      
+      - name: archieve test results fpr codecoverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-result
+          path: coverage
+          retention-days: 5 ## storing files and delete after retention days
+         
+  docker:
+    name: contenerization
+    needs: [unit-testing, code-coverage]
+    permissions:
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+               
+      - name: docker login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERUSERNAME }}
+          password: ${{ secrets.DOCKERPASSWORD }}
+## context is content location of dockerfile
+      - name: GHCR  login
+        uses: docker/login-action@v3
+        with:
+          ## bydefault it consitor docker registry but to use ghcr we need to mention it here
+            registry: ghcr.io
+            username: ${{ github.repository_owner }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          ## sha value is commit value of commit id
+          tags: ${{ vars.DOCKERUSERNAME }}/solar-system:${{ github.sha }}
+
+      - name: Docker image testing
+        run: |
+            echo "📦 Listing available Docker images..."
+            docker images
+        
+            echo "🚀 Running Docker container..."
+            docker run --name solar-system-app -d -p 3000:3000 ${{ vars.DOCKERUSERNAME }}/solar-system:${{ github.sha }}
+        
+            echo "⏳ Waiting for the app to start..."
+            sleep 5
+        
+            echo "🔍 Fetching container's internal IP..."
+            IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system-app)
+            echo "🧠 Container IP: $IP"
+        
+            echo "🧪 Testing image via localhost..."
+            wget -qO- http://127.0.0.1:3000/live | grep live
+        
+            echo "🧪 Testing image via container IP (may not work on GitHub-hosted runner)..."
+            wget -qO- http://$IP:3000/live | grep live || echo "Container IP access might be restricted on GitHub-hosted runners"
+      
+      - name: Container registry push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          ## sha value is commit value of commit id
+          tags: | 
+            ${{ vars.DOCKERUSERNAME }}/solar-system:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha }}
+     
