@@ -24,7 +24,7 @@ jobs:
       - name: setup node version - ${{ matrix.nodejs_version }}
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.nodejs_version }}
+          node-version: ${{ matrix.nodejs_verrsion }}
 
       - name: Cache npm dependencies
         uses: actions/cache@v4
