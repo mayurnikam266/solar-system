@@ -1,4 +1,4 @@
-name: Solar system workflow
+name: Solar system workflow using containers for testing and services
 on: 
   workflow_dispatch:
   push: 
@@ -12,6 +12,16 @@ env:
 jobs:
   unit-testing:
     name: unit testing
+    services:
+        mongo-db:
+            image: siddharth67/mongo-db:non-prod
+            ports:
+                - 27017:27017
+    env:
+        MONGO_URI: 'mongodb+srv://localhost:27017/superData'
+        MONGO_USERNAME: non-prod-user
+        MONGO_PASSWORD: non-prod-password
+
     strategy:
       matrix:
         nodejs_version: [18,19,20]
@@ -51,15 +61,24 @@ jobs:
       
   code-coverage:
     name: code coverage
+    container:
+        image: node:18
+    
+    services:
+        mongo-db:
+            image: siddharth67/mongo-db:non-prod
+            options:
+                --name mongo
+    env:
+        MONGO_URI: 'mongodb+srv://mongo:27017/superData'
+        MONGO_USERNAME: non-prod-user
+        MONGO_PASSWORD: non-prod-password  
+
     runs-on: ubuntu-latest
     steps:
       - name: checkout repository
         uses: actions/checkout@v4
 
-      - name: setup nodejs version - 18
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
 
       - name: Cache npm dependencies
         uses: actions/cache@v4
